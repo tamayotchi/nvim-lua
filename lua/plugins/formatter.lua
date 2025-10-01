@@ -34,7 +34,7 @@ return {
     "zapling/mason-conform.nvim",
     dependencies = { mason, conform },
     opts = {
-      ensure_installed = { "clang-format", "prettierd", "jq", "stylua", "eslint_d" },
+      automatic_installation = false, -- Mason handles installation centrally
     },
   },
 }

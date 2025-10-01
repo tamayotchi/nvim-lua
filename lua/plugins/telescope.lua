@@ -13,7 +13,7 @@ return {
   },
   {
     "nvim-telescope/telescope.nvim",
-    branch = "0.1.x",
+    version = false, -- use HEAD instead of old 0.1.x
     dependencies = {
       "nvim-lua/plenary.nvim",
       fzf,

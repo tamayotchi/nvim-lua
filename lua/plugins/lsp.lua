@@ -1,73 +1,219 @@
-local mason = "williamboman/mason.nvim"
-local mason_lspconfig = "williamboman/mason-lspconfig.nvim"
-local nvim_lspconfig = "neovim/nvim-lspconfig"
-local blink_cmp = "Saghen/blink.cmp"
-
 return {
+  -- LSP configuration
   {
-    mason_lspconfig,
-    event = "VimEnter",
-    dependencies = { mason, nvim_lspconfig },
-    config = function()
-      require("mason").setup()
+    "neovim/nvim-lspconfig",
+    event = "VeryLazy",
+    dependencies = {
+      "williamboman/mason.nvim",
+      "williamboman/mason-lspconfig.nvim",
+    },
+    opts = {
+      diagnostics = {
+        underline = true,
+        update_in_insert = false,
+        virtual_text = {
+          spacing = 4,
+          source = "if_many",
+          prefix = "●",
+        },
+        severity_sort = true,
+        signs = {
+          text = {
+            [vim.diagnostic.severity.ERROR] = "⛔",
+            [vim.diagnostic.severity.WARN] = "⚠️",
+            [vim.diagnostic.severity.HINT] = " ",
+            [vim.diagnostic.severity.INFO] = "ℹ️",
+          },
+        },
+      },
+      inlay_hints = {
+        enabled = true,
+        exclude = { "vue" },
+      },
+      codelens = {
+        enabled = false,
+      },
+      servers = {
+        bashls = {},
+        clangd = {},
+        dockerls = {},
+        jsonls = {},
+        pyright = {},
+        terraformls = {},
+        ts_ls = {},
+        lua_ls = {
+          settings = {
+            Lua = {
+              workspace = {
+                checkThirdParty = false,
+              },
+              codeLens = {
+                enable = true,
+              },
+              completion = {
+                callSnippet = "Replace",
+              },
+              doc = {
+                privateName = { "^_" },
+              },
+              hint = {
+                enable = true,
+                setType = false,
+                paramType = true,
+                paramName = "Disable",
+                semicolon = "Disable",
+                arrayIndex = "Disable",
+              },
+            },
+          },
+        },
+      },
+    },
+    config = function(_, opts)
+      -- Setup diagnostics
+      vim.diagnostic.config(vim.deepcopy(opts.diagnostics))
+
+      -- Setup keymaps on LSP attach
       vim.api.nvim_create_autocmd("LspAttach", {
         callback = function(args)
-          vim.keymap.set("n", "<leader>ld", function()
-            vim.lsp.buf.definition()
-          end, { buffer = args.buf, desc = "[l]sp code [d]efinitions" })
-          vim.keymap.set("n", "<leader>la", function()
-            vim.lsp.buf.code_action()
-          end, { buffer = args.buf, desc = "[l]sp code [a]ctions" })
-          vim.keymap.set("n", "<leader>lr", function()
-            vim.lsp.buf.references()
-          end, { buffer = args.buf, desc = "[l]sp [r]eferences" })
-          vim.keymap.set("n", "<leader>lR", function()
-            vim.lsp.buf.rename()
-          end, { buffer = args.buf, desc = "[l]sp [R]ename" })
-          vim.keymap.set("n", "]d", function()
-            vim.diagnostic.goto_next()
-          end, { buffer = args.buf, desc = "]next [d]iagnostic" })
-          vim.keymap.set("n", "[d", function()
-            vim.diagnostic.goto_prev()
-          end, { buffer = args.buf, desc = "[prev [d]iagnostic" })
+          local map = function(keys, func, desc, mode)
+            mode = mode or "n"
+            vim.keymap.set(mode, keys, func, { buffer = args.buf, desc = desc })
+          end
+
+          map("gd", vim.lsp.buf.definition, "Goto Definition")
+          map("gr", vim.lsp.buf.references, "References")
+          map("gI", vim.lsp.buf.implementation, "Goto Implementation")
+          map("gy", vim.lsp.buf.type_definition, "Goto Type Definition")
+          map("gD", vim.lsp.buf.declaration, "Goto Declaration")
+          map("K", vim.lsp.buf.hover, "Hover")
+          map("gK", vim.lsp.buf.signature_help, "Signature Help")
+          map("<c-k>", vim.lsp.buf.signature_help, "Signature Help", "i")
+          map("<leader>ca", vim.lsp.buf.code_action, "Code Action", { "n", "v" })
+          map("<leader>lR", vim.lsp.buf.rename, "[l]sp [R]ename")
+          map("<leader>cd", vim.diagnostic.open_float, "Line Diagnostics")
+
+          -- Enable inlay hints if supported
+          local client = vim.lsp.get_client_by_id(args.data.client_id)
+          if
+            client
+            and client:supports_method("textDocument/inlayHint")
+            and opts.inlay_hints.enabled
+            and not vim.tbl_contains(opts.inlay_hints.exclude, vim.bo[args.buf].filetype)
+          then
+            vim.lsp.inlay_hint.enable(true, { bufnr = args.buf })
+          end
         end,
       })
 
-      require("mason-lspconfig").setup({
-        ensure_installed = { "bashls", "clangd", "dockerls", "jsonls", "lua_ls", "pyright", "terraformls", "ts_ls" },
-        automatic_enable = false,
-      })
-
-      -- Manual LSP setup since handlers are no longer supported
-      local lspconfig = require("lspconfig")
+      -- Setup LSP servers using modern Neovim 0.11+ API
       local capabilities = require("blink.cmp").get_lsp_capabilities()
-      local servers = { "bashls", "clangd", "dockerls", "jsonls", "lua_ls", "pyright", "terraformls", "ts_ls" }
-      for _, server in ipairs(servers) do
-        lspconfig[server].setup({ capabilities = capabilities })
+
+      for server, config in pairs(opts.servers) do
+        config.capabilities = capabilities
+        vim.lsp.config(server, config)
+        vim.lsp.enable(server)
       end
     end,
   },
+
+  -- Mason
   {
-    blink_cmp,
+    "williamboman/mason.nvim",
+    cmd = "Mason",
+    keys = { { "<leader>cm", "<cmd>Mason<cr>", desc = "Mason" } },
+    build = ":MasonUpdate",
+    opts = {
+      ensure_installed = {
+        -- LSP servers (using Mason package names)
+        "bash-language-server",
+        "clangd",
+        "dockerfile-language-server",
+        "json-lsp",
+        "lua-language-server",
+        "pyright",
+        "terraform-ls",
+        "typescript-language-server",
+        -- Formatters
+        "clang-format",
+        "prettierd",
+        "jq",
+        "stylua",
+        "shfmt",
+        -- Linters
+        "eslint_d",
+        "jsonlint",
+      },
+    },
+    config = function(_, opts)
+      require("mason").setup(opts)
+      local mr = require("mason-registry")
+      mr.refresh(function()
+        for _, tool in ipairs(opts.ensure_installed) do
+          local p = mr.get_package(tool)
+          if not p:is_installed() then
+            p:install()
+          end
+        end
+      end)
+    end,
+  },
+
+  -- Mason LSP Config
+  {
+    "williamboman/mason-lspconfig.nvim",
+    opts = {
+      automatic_installation = false, -- Mason handles installation centrally
+    },
+    config = function(_, opts)
+      require("mason-lspconfig").setup(opts)
+    end,
+  },
+
+  -- Blink completion
+  {
+    "Saghen/blink.cmp",
     event = "InsertEnter",
     dependencies = {
-      nvim_lspconfig,
+      "rafamadriz/friendly-snippets",
     },
     version = "*",
     opts = {
-      keymap = { preset = 'default' },
+      keymap = { preset = "enter" },
       appearance = {
-        use_nvim_cmp_as_default = true,
-        nerd_font_variant = 'mono'
+        use_nvim_cmp_as_default = false,
+        nerd_font_variant = "mono",
       },
       sources = {
-        default = { 'lsp', 'path', 'snippets', 'buffer' },
+        default = { "lsp", "path", "snippets", "buffer" },
+        providers = {
+          lazydev = {
+            name = "LazyDev",
+            module = "lazydev.integrations.blink",
+            score_offset = 100,
+          },
+        },
       },
       completion = {
-        accept = { auto_brackets = { enabled = true } },
-        documentation = { auto_show = true, auto_show_delay_ms = 500 },
+        accept = {
+          auto_brackets = {
+            enabled = true,
+          },
+        },
+        menu = {
+          draw = {
+            treesitter = { "lsp" },
+          },
+        },
+        documentation = {
+          auto_show = true,
+          auto_show_delay_ms = 200,
+        },
+        ghost_text = {
+          enabled = vim.g.ai_cmp or false,
+        },
       },
-      signature = { enabled = true }
+      signature = { enabled = true },
     },
   },
 }

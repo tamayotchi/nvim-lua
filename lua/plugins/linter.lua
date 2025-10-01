@@ -22,7 +22,7 @@ return {
     "rshkarin/mason-nvim-lint",
     dependencies = { mason, nvim_lint, "williamboman/mason-lspconfig.nvim" },
     opts = {
-      ensure_installed = { "eslint_d", "jsonlint" },
+      automatic_installation = false, -- Mason handles installation centrally
     },
   },
 }
