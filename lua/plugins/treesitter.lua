@@ -41,70 +41,7 @@ return {
       },
     },
     config = function(_, opts)
-      local TS = require("nvim-treesitter")
-
-      -- Sanity checks
-      if not TS.setup then
-        vim.notify("Please update nvim-treesitter", vim.log.levels.ERROR)
-        return
-      elseif type(opts.ensure_installed) ~= "table" then
-        vim.notify("nvim-treesitter opts.ensure_installed must be a table", vim.log.levels.ERROR)
-        return
-      end
-
-      -- Setup treesitter
-      TS.setup(opts)
-
-      -- Install missing parsers
-      local installed = TS.get_installed and TS.get_installed() or {}
-      local to_install = vim.tbl_filter(function(lang)
-        return not vim.tbl_contains(installed, lang)
-      end, opts.ensure_installed or {})
-
-      if #to_install > 0 then
-        vim.schedule(function()
-          TS.install(to_install, { summary = true })
-        end)
-      end
-
-      -- Auto-enable features per filetype
-      vim.api.nvim_create_autocmd("FileType", {
-        group = vim.api.nvim_create_augroup("treesitter_attach", { clear = true }),
-        callback = function(ev)
-          local lang = vim.treesitter.language.get_lang(ev.match)
-          if not lang then
-            return
-          end
-
-          -- Check if parser is available
-          local has_parser = pcall(vim.treesitter.language.add, lang)
-          if not has_parser then
-            return
-          end
-
-          -- Enable highlighting
-          if opts.highlight and opts.highlight.enable then
-            pcall(vim.treesitter.start, ev.buf)
-          end
-
-          -- Enable indents
-          if opts.indent and opts.indent.enable then
-            -- Check if indent queries exist
-            local has_indents = pcall(vim.treesitter.query.get, lang, "indents")
-            if has_indents then
-              vim.bo[ev.buf].indentexpr = "v:lua.require'nvim-treesitter.indent'.get_indent(v:lnum)"
-            end
-          end
-
-          -- Enable folds (optional, can be enabled if you want treesitter-based folding)
-          -- Uncomment if you want treesitter folds
-          -- local has_folds = pcall(vim.treesitter.query.get, lang, "folds")
-          -- if has_folds then
-          --   vim.wo[0].foldmethod = "expr"
-          --   vim.wo[0].foldexpr = "v:lua.vim.treesitter.foldexpr()"
-          -- end
-        end,
-      })
+      require("nvim-treesitter.configs").setup(opts)
     end,
   },
 
