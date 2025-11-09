@@ -12,6 +12,7 @@ return {
     words = { enabled = true },
     image = { enabled = true },
     terminal = { enabled = true },
+    explorer = { enabled = true },
   },
   keys = {
     {
@@ -22,6 +23,13 @@ return {
       desc = "Lazygit (cwd)",
     },
     {
+      "<leader>e",
+      function()
+        Snacks.explorer()
+      end,
+      desc = "File Explorer",
+    },
+    {
       "<c-/>",
       function()
         Snacks.terminal(nil, { cwd = vim.fn.getcwd() })
@@ -29,10 +37,23 @@ return {
       desc = "Terminal",
     },
     {
+      "<c-_>",
+      function()
+        Snacks.terminal(nil, { cwd = vim.fn.getcwd() })
+      end,
+      desc = "which_key_ignore",
+    },
+    {
       "<C-/>",
       "<cmd>close<cr>",
       mode = "t",
       desc = "Hide Terminal",
+    },
+    {
+      "<C-_>",
+      "<cmd>close<cr>",
+      mode = "t",
+      desc = "which_key_ignore",
     },
   },
 }

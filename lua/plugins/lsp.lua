@@ -39,6 +39,7 @@ return {
         dockerls = {},
         jsonls = {},
         pyright = {},
+        elixirls = {},
         terraformls = {},
         ts_ls = {},
         lua_ls = {
@@ -89,9 +90,8 @@ return {
           map("K", vim.lsp.buf.hover, "Hover")
           map("gK", vim.lsp.buf.signature_help, "Signature Help")
           map("<c-k>", vim.lsp.buf.signature_help, "Signature Help", "i")
-          map("<leader>ca", vim.lsp.buf.code_action, "Code Action", { "n", "v" })
+          map("<leader>lca", vim.lsp.buf.code_action, "[l]sp [c]ode [a]ction", { "n", "v" })
           map("<leader>lR", vim.lsp.buf.rename, "[l]sp [R]ename")
-          map("<leader>cd", vim.diagnostic.open_float, "Line Diagnostics")
 
           -- Enable inlay hints if supported
           local client = vim.lsp.get_client_by_id(args.data.client_id)
@@ -130,6 +130,7 @@ return {
         "clangd",
         "dockerfile-language-server",
         "json-lsp",
+        "elixir-ls",
         "lua-language-server",
         "pyright",
         "terraform-ls",
@@ -179,7 +180,11 @@ return {
     },
     version = "*",
     opts = {
-      keymap = { preset = "enter" },
+      keymap = {
+        preset = "default",
+        ["<C-y>"] = { "accept", "fallback" },
+        ["<CR>"] = {},
+      },
       appearance = {
         use_nvim_cmp_as_default = false,
         nerd_font_variant = "mono",
