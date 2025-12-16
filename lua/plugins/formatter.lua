@@ -13,11 +13,13 @@ return {
       },
       formatters_by_ft = {
         cpp = { "clang-format" },
-        html = { "prettierd" },
-        json = { "jq" },
+        html = { "biome" },
+        json = { "biome" },
         lua = { "stylua" },
-        typescript = { "eslint_d", "prettierd" },
+        typescript = { "biome" },
         yaml = { "prettierd" },
+        elixir = { "mix" },
+        heex = { "mix" },
       },
     },
     keys = {
