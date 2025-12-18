@@ -20,6 +20,7 @@ return {
         yaml = { "prettierd" },
         elixir = { "mix" },
         heex = { "mix" },
+        terraform = { "terraform_fmt" },
       },
     },
     keys = {
